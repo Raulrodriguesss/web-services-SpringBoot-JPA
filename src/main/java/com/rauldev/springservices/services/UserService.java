@@ -5,10 +5,14 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 import com.rauldev.springservices.entities.User;
 import com.rauldev.springservices.repositories.UserRepository;
+import com.rauldev.springservices.services.exceptions.DataBaseException;
+import com.rauldev.springservices.services.exceptions.ResourceNotFoundException;
 
 @Service
 public class UserService {
@@ -25,7 +29,7 @@ public class UserService {
 		
 		 Optional<User> obj = repository.findById(id);
 		 
-		return obj.get();
+		return obj.orElseThrow(() -> new ResourceNotFoundException(id));
 	}
 	
 	public User insertUser(User u) {
@@ -33,7 +37,13 @@ public class UserService {
 	}
 	
 	public void deleteUser(Long id) {
-		repository.deleteById(id);
+		try {
+			repository.deleteById(id);
+		}catch(EmptyResultDataAccessException e) {
+			throw new ResourceNotFoundException(id);
+		}catch(DataIntegrityViolationException e) {
+			throw new DataBaseException(e.getMessage());
+		}
 	}
 	
 	public User updateUser(Long id,User user) {
